@@ -39,7 +39,7 @@ class Led():
 
     2. display(): Manipulate what is shown on the LED
   """
-  def __init__(self, width=32, height=8, block_orientation=-90):
+  def __init__(self, width=32, height=8, block_orientation=-90, cli=False):
     serial = spi(port=0, device=0, gpio=noop())
     self.device = max7219(serial, width=width, height=height, block_orientation=block_orientation)
     self.virtual = viewport(self.device, width=width, height=height)
@@ -53,13 +53,14 @@ class Led():
     # Display config
     self.led_attrs = {
             "display": "show",
-            "display_mode": "message",
+            "display_mode": "clock",
             "contrast" : "10",
             "message": "tbptbp",
             "power": "on"
     }
     self.git_repos = []
     self.threads = []
+    self.cli = cli
 
     # Some required locks
     self.io_lock = threading.RLock()
@@ -97,17 +98,22 @@ class Led():
       self.attr_lock.acquire()
       self.led_attrs[k] = v
       self.attr_lock.release()
-    self.io_print(json.dumps(self.led_attrs, indent=2))
+    if self.cli:
+      self.io_print(json.dumps(self.led_attrs, indent=2))
+
+
   """
     Main functionalities of the LED class starts here
   """
 
   def run(self):
-    input_worker = threading.Thread(target=self.read_keyboard_input)
+    if self.cli:
+        input_worker = threading.Thread(target=self.read_keyboard_input)
+        self.threads.append(input_worker)
+
     input_proc_worker = threading.Thread(target=self.input_processor)
     display_worker = threading.Thread(target= self.display)
 
-    self.threads.append(input_worker)
     self.threads.append(input_proc_worker)
     self.threads.append(display_worker)
 
@@ -156,23 +162,31 @@ class Led():
       Worker that handles the tasks in the task queue
     """
     while self.led_attrs['power'] == 'on':
+      # Skip loop if task queue is empty
       if self.tasks.empty():
         continue
+
       input_str = self.tasks.get()
-      if (input_str == 'quit'):
+
+      if (input_str == 'quit'):         # CLI Quit command
         self.led_attrs['power'] = 'off'
         continue
-      elif (input_str == 'help'):
+      elif (input_str == 'help'):       # CLI Help command
         self.io_print(json.dumps(self.led_attrs, indent=2))
         continue
-      try:
-        kv_list = [x.strip() for x in input_str.split(' ')]
-        kv_dict = dict(s.split('=') for s in kv_list)
-      except:
-        self.program_print("Invalid command: {}\nPlease try <attribute>=<value>".format(input_str),
-                c_before=TermText.WHITE, bkgd_before=TermText.BACKGROUND_RED)
-        continue
-      self.set_led_attrs(kv_dict)
+
+      # Parse dictionary attributes
+      if not isinstance(input_str, dict):
+        try:
+          kv_list = [x.strip() for x in input_str.split(' ')]
+          kv_dict = dict(s.split('=') for s in kv_list)
+        except:
+          self.program_print("Invalid command: {}\nPlease try <attribute>=<value>".format(input_str),
+                  c_before=TermText.WHITE, bkgd_before=TermText.BACKGROUND_RED)
+          continue
+        self.set_led_attrs(kv_dict)
+      else:
+        self.set_led_attrs(input_str)
     self.program_print("Input Processor Thread done!", c_before=TermText.WHITE, bkgd_before=TermText.BACKGROUND_YELLOW)
 
 
