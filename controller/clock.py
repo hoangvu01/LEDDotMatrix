@@ -7,8 +7,6 @@ from urllib.request import Request, urlopen
 from datetime import datetime
 from enum import Enum
 
-from inputimeout import inputimeout
-
 from luma.core.interface.serial import spi, noop
 from luma.core.virtual import viewport
 from luma.led_matrix.device import max7219
