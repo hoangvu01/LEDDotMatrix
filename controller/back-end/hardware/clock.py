@@ -14,6 +14,7 @@ from luma.core.legacy import text, show_message
 from luma.core.render import canvas
 from luma.core.legacy.font import proportional, CP437_FONT, LCD_FONT, SINCLAIR_FONT
 
+
 """
   Basic utilities for the class LED matrix which can be reused for other purposes
 """
@@ -126,7 +127,8 @@ class Led():
     except KeyboardInterrupt:
       pass
     except:
-      self.program_print("Threads cannot be initialised...", c_before=TermText.WHITE, c_after=TermText.BACKGROUND_RED)
+      self.program_print("Threads cannot be initialised...",
+              c_before=TermText.WHITE, c_after=TermText.BACKGROUND_RED)
     self.device.cleanup()
 
   def read_keyboard_input(self):
@@ -239,10 +241,4 @@ class Led():
         self.text_display()
     self.program_print("Display Thread Done!", c_before=TermText.WHITE, bkgd_before=TermText.BACKGROUND_YELLOW)
 
-def main():
-  dot_matrix = Led()
-  dot_matrix.run()
-
-if __name__ == '__main__':
-    main()
 

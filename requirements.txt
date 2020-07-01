@@ -1,4 +1,5 @@
 luma.core>=1.14.0
 luma.led-matrix>=1.4.1
 flask
-
+npm
+nodeenv
