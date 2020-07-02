@@ -1,17 +1,18 @@
 import RPi.GPIO as GPIO
-import math, time, queue, signal, json
 import _thread, threading
+import math, time, queue, signal, json
+
+from enum import Enum
+from pydoc import locate
+from datetime import datetime
 
 from urllib.request import Request, urlopen
 
-from datetime import datetime
-from enum import Enum
-
-from luma.core.interface.serial import spi, noop
+from luma.core.render import canvas
 from luma.core.virtual import viewport
 from luma.led_matrix.device import max7219
 from luma.core.legacy import text, show_message
-from luma.core.render import canvas
+from luma.core.interface.serial import spi, noop
 from luma.core.legacy.font import proportional, CP437_FONT, LCD_FONT, SINCLAIR_FONT
 
 
@@ -50,14 +51,43 @@ class Led():
 
     # Task Queue
     self.tasks = queue.Queue()
+    self.display_modes = {
+      "clock" : self.clock_display,
+      "text" : self.text_display,
+      "github" : self.github_display
+    }
 
     # Display config
+    """
+        :all - {'value', 'type'}
+        :type
+            + str : {'options'}
+            + int : {'min', 'max'}
+    """
     self.led_attrs = {
-            "display": "show",
-            "display_mode": "clock",
-            "contrast" : "10",
-            "message": "tbptbp",
-            "power": "on"
+            "display": {
+                        "value": True,
+                        "type": "bool"
+                       },
+            "power": {
+                      "value" : True,
+                      "type": "bool"
+                     },
+            "display_mode": {
+                             "options": ["text", "clock", "github"],
+                             "value": "clock",
+                             "type": "str"
+                            },
+            "contrast" : {
+                          "min": 0,
+                          "max": 150,
+                          "value": 50,
+                          "type": "int"
+                         },
+            "message": {
+                        "value":"tbptbp",
+                        "type": "str"
+                       }
     }
     self.git_repos = []
     self.threads = []
@@ -97,7 +127,11 @@ class Led():
       if not(k in self.led_attrs):
         continue
       self.attr_lock.acquire()
-      self.led_attrs[k] = v
+      if (self.led_attrs[k]["type"] == "bool"):
+        self.led_attrs[k]['value'] = ("true" == v) or bool(int(v))
+      else:
+        attr_type = locate(self.led_attrs[k]["type"])
+        self.led_attrs[k]['value'] = attr_type(v)
       self.attr_lock.release()
     if self.cli:
       self.io_print(json.dumps(self.led_attrs, indent=2))
@@ -138,7 +172,7 @@ class Led():
       which may block the process of other threads for too long
     """
     x = 0
-    while self.led_attrs['power'] == 'on':
+    while self.led_attrs['power']['value']:
       prompt = '{}In[{}]: {}'.format(TermText.GREEN, x, TermText.RESET)
       timeout = 10
       timer = threading.Timer(timeout, _thread.interrupt_main)
@@ -163,7 +197,7 @@ class Led():
     """
       Worker that handles the tasks in the task queue
     """
-    while self.led_attrs['power'] == 'on':
+    while self.led_attrs['power']['value']:
       # Skip loop if task queue is empty
       if self.tasks.empty():
         continue
@@ -171,7 +205,7 @@ class Led():
       input_str = self.tasks.get()
 
       if (input_str == 'quit'):         # CLI Quit command
-        self.led_attrs['power'] = 'off'
+        self.led_attrs['power']['value'] = False
         continue
       elif (input_str == 'help'):       # CLI Help command
         self.io_print(json.dumps(self.led_attrs, indent=2))
@@ -222,23 +256,27 @@ class Led():
     """ """
     self.get_github_api()
     with canvas(self.virtual) as led_canvas:
-      show_message(self.device, self.led_attrs['message'], fill="red", font=proportional(SINCLAIR_FONT))
+      show_message(self.device, self.led_attrs['message']['value'],
+              fill="red", font=proportional(SINCLAIR_FONT))
+    time.sleep(1)
+
+  def github_display(self):
+    """"""
+    self.get_github_api()
+    with canvas(self.virtual) as led_canvas:
       for repo in self.git_repos:
         show_message(self.device, repo, fill="red", font=proportional(LCD_FONT))
     time.sleep(1)
 
-
   def display(self):
-    while self.led_attrs['power'] == 'on':
-      self.device.contrast(int(self.led_attrs['contrast']))
-      if (self.led_attrs['display'] == 'show'):
+    while self.led_attrs['power']['value']:
+      self.device.contrast(self.led_attrs['contrast']['value'])
+      if (self.led_attrs['display']['value']):
         self.device.show()
       else:
         self.device.hide()
-      if (self.led_attrs['display_mode'] == 'clock'):
-        self.clock_display()
-      else:
-        self.text_display()
+      if (self.led_attrs['display_mode']['value'] in self.display_modes):
+        self.display_modes[self.led_attrs['display_mode']['value']]()
     self.program_print("Display Thread Done!", c_before=TermText.WHITE, bkgd_before=TermText.BACKGROUND_YELLOW)
 
 
