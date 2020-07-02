@@ -45,7 +45,8 @@ class DisplaySlider extends React.Component<{}, IState> {
       method: 'POST',
       headers: {'Content-Type' : 'Application/json' },
       body: JSON.stringify(ledAttrValues)
-    })
+    }).then(() => {window.location.reload()})
+    
   }
  
   render() {
@@ -57,7 +58,7 @@ class DisplaySlider extends React.Component<{}, IState> {
         console.log(ledAttrs[key]);
         if (ledAttrs[key]["type"] === 'int') {
           sliderIntArr.push(
-            <Col id={key}>
+            <Col xs="8" md={{size : 4, offset: 4}}  id={key}>
               <Typography id={key}> {key} </Typography>
               <Slider
                 defaultValue = {ledAttrs[key]['value'] 
@@ -97,18 +98,14 @@ class DisplaySlider extends React.Component<{}, IState> {
 
     return (
       <Container fluid>
-        <Row> 
+        <Row xs="8" md="6"> 
           {sliderIntArr} 
         </Row>
         <Row>
-          <Col>
+          <Col xs="12" md="8" lg={{size : 6, offset : 3}}>
             <Form> 
               {sliderStrArr} 
             </Form>
-          </Col>
-        </Row>
-        <Row> 
-          <Col> 
             <Button onClick={this.postLEDAttribute}> 
               submit
             </Button>
