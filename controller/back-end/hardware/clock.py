@@ -75,19 +75,21 @@ class Led():
                      },
             "display_mode": {
                              "options": ["text", "clock", "github"],
+                             "field" : "select",
                              "value": "clock",
                              "type": "str"
                             },
+            "message": {
+                        "field" : "input",
+                        "value":"tbptbp",
+                        "type": "str"
+                       },
             "contrast" : {
                           "min": 0,
                           "max": 150,
                           "value": 50,
                           "type": "int"
-                         },
-            "message": {
-                        "value":"tbptbp",
-                        "type": "str"
-                       }
+                         }
     }
     self.git_repos = []
     self.threads = []
