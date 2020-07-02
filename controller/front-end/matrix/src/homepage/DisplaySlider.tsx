@@ -1,6 +1,7 @@
 import React from 'react';
 import { Slider, Typography } from '@material-ui/core';
-import { Container, Row, Col, Button } from 'reactstrap';
+import { Container, Row, Col, Button,
+         Form, FormGroup, Label, Input } from 'reactstrap';
 
 
 type IState = {
@@ -49,13 +50,14 @@ class DisplaySlider extends React.Component<{}, IState> {
  
   render() {
     const { loaded, ledAttrs } = this.state;
-    var sliderArr : any[] = [];
+    var sliderIntArr : any[] = [];
+    var sliderStrArr : any[] = [];
     if (loaded) {
       for (let key in ledAttrs) {
         console.log(ledAttrs[key]);
         if (ledAttrs[key]["type"] === 'int') {
-          sliderArr.push(
-            <div id={key}>
+          sliderIntArr.push(
+            <Col id={key}>
               <Typography id={key}> {key} </Typography>
               <Slider
                 defaultValue = {ledAttrs[key]['value'] 
@@ -72,18 +74,37 @@ class DisplaySlider extends React.Component<{}, IState> {
                     this.setState({ledAttrs : curLed});
                 }}
               />   
-            </div>  
-        
+            </Col>  
           );
+        } else if (ledAttrs[key]["type"] === 'str') {
+          sliderStrArr.push(
+            <FormGroup> 
+              <Label> {key} </Label>
+              <Input 
+                id={key} 
+                name={key} 
+                onChange={(event : any) => {
+                  var curLed = this.state.ledAttrs;
+                  curLed[key]["value"] = event.target.value;
+                  this.setState({ledAttrs : curLed})
+                }}
+                placeholder="Type here..."/>
+            </FormGroup> 
+          )
         }
       }
     }
 
     return (
-      <Container>
+      <Container fluid>
         <Row> 
-          <Col xs="8" md="8" lg="6"> 
-            {sliderArr} 
+          {sliderIntArr} 
+        </Row>
+        <Row>
+          <Col>
+            <Form> 
+              {sliderStrArr} 
+            </Form>
           </Col>
         </Row>
         <Row> 
