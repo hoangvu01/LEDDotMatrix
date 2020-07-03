@@ -23,7 +23,7 @@ class DisplaySlider extends React.Component<{}, IState> {
   }
 
   componentDidMount() {
-    fetch("http://192.168.0.58:5000/api/getDisplay")
+    fetch("http://tbp.myftp.org:5000/api/getDisplay")
       .then(res => res.json())
       .then(
         (result) => {
