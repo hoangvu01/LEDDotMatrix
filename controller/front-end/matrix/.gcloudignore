@@ -1,0 +1,13 @@
+.gcloudignore
+
+# Docker files
+Dockerfile
+.dockerignore
+
+# Git files
+.gitignore
+.git/
+
+# NodeJS files
+node_modules/
+
